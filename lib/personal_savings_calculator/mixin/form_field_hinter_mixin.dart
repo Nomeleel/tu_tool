@@ -2,7 +2,7 @@ mixin FormFieldHinterMixin {
   String? amountHinter(String? value) {
     if ((value?.isNotEmpty ?? false)) {
       int amountLength = num.tryParse(value!)?.toInt().toString().length ?? 0;
-      if (amountLength < 10) {
+      if (amountLength > 0 && amountLength < 10) {
         return amountLowUnitMap[(amountLength - 1) % 4 + 1]! + amountHightUnitMap[(amountLength / 4).ceil()]!;
       }
     }

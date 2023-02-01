@@ -1,47 +1,38 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../mixin/form_field_hinter_mixin.dart';
 import '../mixin/form_field_validator_mixin.dart';
 import 'text_form_field_row.dart';
 
-class PersonalSavingsCalculator extends StatelessWidget with FormFieldValidatorMixin, FormFieldHinterMixin {
+class PersonalSavingsCalculator extends StatefulWidget {
   const PersonalSavingsCalculator({super.key, this.label});
 
   final String? label;
 
   @override
+  State<PersonalSavingsCalculator> createState() => _PersonalSavingsCalculatorState();
+}
+
+class _PersonalSavingsCalculatorState extends State<PersonalSavingsCalculator>
+    with FormFieldValidatorMixin, FormFieldHinterMixin {
+  // Form field controller
+  final TextEditingController _initAmountController = TextEditingController();
+  final TextEditingController _aprController = TextEditingController();
+  final TextEditingController _totalController = TextEditingController();
+
+  @override
   Widget build(BuildContext context) {
     return Form(
       autovalidateMode: AutovalidateMode.onUserInteraction,
-      onChanged: () {
-        // Form.of(primaryFocus!.context!)?.save();
-      },
+      onChanged: () => Form.of(primaryFocus!.context!)?.save(),
       child: CupertinoFormSection.insetGrouped(
-        header: label != null ? Text(label!) : null,
+        header: widget.label != null ? Text(widget.label!) : null,
         children: [
           ..._buildFormFieldList(),
-          Builder(
-            builder: (ctx) => Center(
-              heightFactor: 1.5,
-              child: IconButton(
-                icon: const Icon(Icons.calculate),
-                onPressed: () {
-                  if (Form.of(ctx)?.validate() ?? false) {
-                    print('calculate');
-                  }
-                },
-              ),
-            ),
-          ),
-          TextFormFieldRow(
-            padding: textFormFieldRowPadding,
-            prefix: _buildFormFieldLabel('本息合计'),
-            readOnly: true,
-            initialValue: '123',
-            textFieldPrefix: _buildAmountPrefix(),
-            textFieldSuffix: CupertinoButton(padding: EdgeInsets.zero, child: const Text('复制'), onPressed: () {}),
-          ),
+          _buildCalculatorBtn(),
+          _buildTotalRow(),
         ],
       ),
     );
@@ -50,6 +41,7 @@ class PersonalSavingsCalculator extends StatelessWidget with FormFieldValidatorM
   List<Widget> _buildFormFieldList() {
     return [
       TextFormFieldRow(
+        controller: _initAmountController,
         padding: textFormFieldRowPadding,
         prefix: _buildFormFieldLabel('初始金额'),
         textFieldPrefix: _buildAmountPrefix(),
@@ -60,6 +52,7 @@ class PersonalSavingsCalculator extends StatelessWidget with FormFieldValidatorM
         hintBuilder: _amountHinterBuilder,
       ),
       TextFormFieldRow(
+        controller: _aprController,
         padding: textFormFieldRowPadding,
         prefix: _buildFormFieldLabel('年利率'),
         keyboardType: TextInputType.number,
@@ -85,15 +78,70 @@ class PersonalSavingsCalculator extends StatelessWidget with FormFieldValidatorM
 
   Widget _amountHinterBuilder(BuildContext context, String hintText) {
     return Positioned(
-      left: 10,
-      top: -20,
+      left: 18,
+      top: -16,
       child: Container(
-        width: 50,
-        height: 20,
-        color: CupertinoColors.placeholderText,
+        height: 16,
+        padding: const EdgeInsets.symmetric(horizontal: 5),
+        decoration: BoxDecoration(
+          color: CupertinoColors.placeholderText,
+          borderRadius: BorderRadius.circular(3),
+        ),
         alignment: Alignment.center,
-        child: Text(hintText),
+        child: Text(hintText, style: Theme.of(context).textTheme.labelSmall),
       ),
     );
   }
+
+  Widget _buildCalculatorBtn() {
+    return AnimatedBuilder(
+      animation: Listenable.merge([_initAmountController, _aprController]),
+      builder: (ctx, child) {
+        return Center(
+          heightFactor: 1.5,
+          child: IconButton(
+            icon: child!,
+            onPressed: _isAllNotEmpty() ? (() => (Form.of(ctx)?.validate() ?? false) ? _calculator() : null) : null,
+          ),
+        );
+      },
+      child: const Icon(Icons.calculate),
+    );
+  }
+
+  Widget _buildTotalRow() {
+    return TextFormFieldRow(
+      controller: _totalController,
+      padding: textFormFieldRowPadding,
+      prefix: _buildFormFieldLabel('本息合计'),
+      readOnly: true,
+      textFieldPrefix: _buildAmountPrefix(),
+      textFieldSuffix: ValueListenableBuilder(
+        valueListenable: _totalController,
+        builder: (context, value, child) {
+          return CupertinoButton(
+            padding: EdgeInsets.zero,
+            onPressed: value.text.isNotEmpty ? _copyTotal : null,
+            child: child!,
+          );
+        },
+        child: const Text('复制'),
+      ),
+    );
+  }
+
+  @override
+  void dispose() {
+    _initAmountController.dispose();
+    _aprController.dispose();
+    _totalController.dispose();
+    super.dispose();
+  }
+
+  bool _isAllNotEmpty() => [_initAmountController, _aprController].every(((e) => e.text.isNotEmpty));
+
+  void _calculator() => _totalController.text =
+      (num.tryParse(_initAmountController.text)! * (1 + num.tryParse(_aprController.text)! / 100)).toString();
+
+  void _copyTotal() => Clipboard.setData(ClipboardData(text: _totalController.text));
 }
