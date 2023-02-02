@@ -47,7 +47,7 @@ class _PersonalSavingsCalculatorState extends State<PersonalSavingsCalculator>
         textFieldPrefix: _buildAmountPrefix(),
         keyboardType: TextInputType.number,
         autovalidateMode: AutovalidateMode.always,
-        validator: numberValidator,
+        validator: positiveNumberValidator,
         hinter: amountHinter,
         hintBuilder: _amountHinterBuilder,
       ),
@@ -57,7 +57,7 @@ class _PersonalSavingsCalculatorState extends State<PersonalSavingsCalculator>
         prefix: _buildFormFieldLabel('年利率'),
         keyboardType: TextInputType.number,
         autovalidateMode: AutovalidateMode.always,
-        validator: numberValidator,
+        validator: positiveNumberValidator,
         textFieldSuffix: _buildPercentageSuffix(),
       ),
     ];
