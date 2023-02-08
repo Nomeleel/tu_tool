@@ -11,6 +11,8 @@ class PersonalSavingsCalculatorPage extends StatefulWidget {
 }
 
 class _PersonalSavingsCalculatorPageState extends State<PersonalSavingsCalculatorPage> {
+  int _itemCount = 1;
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -20,13 +22,20 @@ class _PersonalSavingsCalculatorPageState extends State<PersonalSavingsCalculato
       backgroundColor: CupertinoColors.systemGroupedBackground,
       body: ListView.builder(
         padding: EdgeInsets.only(top: 20, bottom: MediaQuery.of(context).padding.bottom + 20),
-        itemCount: 2,
+        itemCount: _itemCount,
         itemBuilder: (context, index) {
           return PersonalSavingsCalculator(
+            key: ValueKey(index),
             label: 'NO.${index + 1}',
           );
         },
       ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
+      floatingActionButton: FloatingActionButton(
+        onPressed: () => setState(() => _itemCount++),
+        child: const Icon(Icons.add),
+      ),
+      resizeToAvoidBottomInset: true,
     );
   }
 }
