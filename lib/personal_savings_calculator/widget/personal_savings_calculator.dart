@@ -19,6 +19,7 @@ class _PersonalSavingsCalculatorState extends State<PersonalSavingsCalculator>
     with FormFieldValidatorMixin, FormFieldHinterMixin {
   // Form field controller
   final TextEditingController _initAmountController = TextEditingController();
+  final TextEditingController _initAmountAdditionController = TextEditingController();
   final TextEditingController _aprController = TextEditingController();
   final TextEditingController _totalController = TextEditingController();
 
@@ -40,16 +41,49 @@ class _PersonalSavingsCalculatorState extends State<PersonalSavingsCalculator>
 
   List<Widget> _buildFormFieldList() {
     return [
-      TextFormFieldRow(
-        controller: _initAmountController,
-        padding: textFormFieldRowPadding,
-        prefix: _buildFormFieldLabel('初始金额'),
-        textFieldPrefix: _buildAmountPrefix(),
-        keyboardType: TextInputType.number,
-        autovalidateMode: AutovalidateMode.always,
-        validator: positiveNumberValidator,
-        hinter: amountHinter,
-        hintBuilder: _amountHinterBuilder,
+      Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            child: TextFormFieldRow(
+              controller: _initAmountController,
+              padding: textFormFieldRowPadding.copyWith(right: 0),
+              prefix: _buildFormFieldLabel('初始金额'),
+              textFieldPrefix: _buildAmountPrefix(),
+              textFieldSuffix: ValueListenableBuilder(
+                valueListenable: _initAmountAdditionController,
+                builder: (context, value, child) {
+                  return Text((num.tryParse(value.text) ?? 0) >= 0 ? '追加' : '提取');
+                },
+              ),
+              keyboardType: TextInputType.number,
+              autovalidateMode: AutovalidateMode.always,
+              validator: positiveNumberValidator,
+              hinter: amountHinter,
+              hintBuilder: _amountHinterBuilder,
+            ),
+          ),
+          Expanded(
+            child: TextFormFieldRow(
+              controller: _initAmountAdditionController,
+              padding: textFormFieldRowPadding.copyWith(left: 7),
+              textFieldPrefix: _buildAmountPrefix(),
+              textFieldSuffix: ValueListenableBuilder(
+                valueListenable: _initAmountAdditionController,
+                builder: (context, value, child) => value.text.isEmpty ? const SizedBox.shrink() : child!,
+                child: IconButton(
+                  icon: const Icon(Icons.clear_outlined, size: 16),
+                  onPressed: _initAmountAdditionController.clear,
+                ),
+              ),
+              keyboardType: TextInputType.number,
+              autovalidateMode: AutovalidateMode.always,
+              validator: numberValidator,
+              hinter: amountHinter,
+              hintBuilder: _amountHinterBuilder,
+            ),
+          ),
+        ],
       ),
       TextFormFieldRow(
         controller: _aprController,
@@ -63,7 +97,7 @@ class _PersonalSavingsCalculatorState extends State<PersonalSavingsCalculator>
     ];
   }
 
-  EdgeInsetsGeometry get textFormFieldRowPadding => const EdgeInsets.symmetric(horizontal: 20, vertical: 6);
+  EdgeInsets get textFormFieldRowPadding => const EdgeInsets.symmetric(horizontal: 20, vertical: 6);
 
   Widget _buildFormFieldLabel(String label) {
     return SizedBox(
@@ -133,6 +167,7 @@ class _PersonalSavingsCalculatorState extends State<PersonalSavingsCalculator>
   @override
   void dispose() {
     _initAmountController.dispose();
+    _initAmountAdditionController.dispose();
     _aprController.dispose();
     _totalController.dispose();
     super.dispose();
@@ -141,7 +176,9 @@ class _PersonalSavingsCalculatorState extends State<PersonalSavingsCalculator>
   bool _isAllNotEmpty() => [_initAmountController, _aprController].every(((e) => e.text.isNotEmpty));
 
   void _calculator() => _totalController.text =
-      (num.tryParse(_initAmountController.text)! * (1 + num.tryParse(_aprController.text)! / 100)).toString();
+      ((num.tryParse(_initAmountController.text)! + (num.tryParse(_initAmountAdditionController.text) ?? 0)) *
+              (1 + num.tryParse(_aprController.text)! / 100))
+          .toString();
 
   void _copyTotal() => Clipboard.setData(ClipboardData(text: _totalController.text));
 }
